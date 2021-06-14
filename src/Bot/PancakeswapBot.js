@@ -5,7 +5,6 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';
 import ResultViewer from './ResultViewer';
-import PaginationTableComponent from './PaginationTableComponent';
 
 const ethers = require('ethers');
 const config = require('./config/test.json');
@@ -16,7 +15,6 @@ const provider = new ethers.providers.JsonRpcProvider(config[config.network].nod
 const wallet = new ethers.Wallet(config[config.network].privateKey, provider);
 const account = wallet.connect(provider);
 const genericErc20Abi = require("./config/Erc20.json");
-const gntABI = require('./config/gntABI.json');
 
 const pancake_route_abi = [
   'function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)',
@@ -53,7 +51,7 @@ function PancakeswapBot() {
     setState({ ...state, resultViewer: "================== Stop ===================" });
   }
 
-  const { resultViewer, wbnb, usdt, bnb, busd, mdx, cake, usdc } = state;
+  const { tableViewer, resultViewer, wbnb, usdt, bnb, busd, mdx, cake, usdc } = state;
 
   // const TextFile = async (result) => {
   //   const fileData = JSON.stringify(result);
@@ -105,8 +103,8 @@ function PancakeswapBot() {
               let amountIn = data.amountIn;
               // let amountOutMin = data.amountOutMin;
 
-              let tokenIn = data.path[0];
-              let tokenOut = data.path[1];
+              let tokenIn = data.path[0].toLowerCase();
+              let tokenOut = data.path[1].toLowerCase();
 
               let first = '';
               let second = '';
@@ -130,7 +128,7 @@ function PancakeswapBot() {
               console.log("second: " + second);
 
               if(first === '')
-                console.log("tokeIn: ====" + tokenIn);
+                console.log("tokeIn: " + tokenIn);
 
               if (
                 ((tokenIn === config[config.network].addresses.WBNB && wbnb) || (tokenIn === config[config.network].addresses.BNB && bnb)
@@ -169,27 +167,28 @@ function PancakeswapBot() {
                       // console.log(`gas_price: ${gas_price}`);
 
                       setState({ ...state, resultViewer: "================= Buy ====================" });
-                      swapTokens(tokenIn, tokenOut, amountIn);
-
+                      setTimeout(async () => {
+                        await swapTokens(tokenIn, tokenOut, amountIn);
+                      }, 1);
+                      
                       resultTemp.push("============== Buy ================");
                       resultTemp.push(new Date());
                       resultTemp.push(first);
                       resultTemp.push(second);
 
-                      const amountOut = pancake_route_contract.getAmountsOut(amountIn, [tokenIn, tokenOut]);
+                      setTimeout(async () => {
+                        const amounts = await pancake_route_contract.getAmountsOut(amountIn, [tokenIn, tokenOut]);
+                        // const amountOut = amounts[1].sub(amounts[1].div(10)); // 10%
+                        const amountOut = Math.floor(amounts[1] * 0.97) ; // 3%
 
-                      setState({ ...state, resultViewer: "================= Sell ====================" });
-                      swapTokens(tokenOut, tokenIn, amountOut);
+                        setState({ ...state, resultViewer: "================= Sell ====================" });
+                        await swapTokens(tokenOut, tokenIn, amountOut);
 
-                      resultTemp.push("============== Sell ================");
-                      resultTemp.push(new Date());
-                      resultTemp.push(second);
-                      resultTemp.push(first);
-
-                      setState({ ...state, tableViewer: {resultTemp} });
-
-                      // TextFile(resultTemp);
-                      // });
+                        resultTemp.push("============== Sell ================");
+                        resultTemp.push(new Date());
+                        resultTemp.push(second);
+                        resultTemp.push(first);
+                      }, 1);
                     } else {
                       console.log("Balance is not Enough.");
                     }
@@ -205,7 +204,6 @@ function PancakeswapBot() {
 
   const swapTokens = async (tokenIn, tokenOut, amountIn) => {
 
-    const amountOut = await pancake_route_contract.getAmountsOut(amountIn, [tokenIn, tokenOut]);
     // Operating Smart contract
     // const pancake_route_address = "0x10ed43c718714eb63d5aa57b78b54704e256024e";
     // The ERC-20 Contract ABI, which is a common contract interface
@@ -244,10 +242,14 @@ function PancakeswapBot() {
       try {
         //signedTx = await account.signTransaction(txObj);
         account.sendTransaction(txObj).then((transaction) => {
-          console.dir(transaction);
+          // console.dir(transaction);
           console.log('====================== Approve Send finished! ================= ');
 
           let iface = new ethers.utils.Interface(pancake_route_abi);
+          const amounts = pancake_route_contract.getAmountsOut(amountIn, [tokenIn, tokenOut]);
+          // const amountOut = amounts[1].sub(amounts[1].div(10)); // 10%
+          const amountOut = Math.floor(amounts[1] * 0.97); // 3%
+          
           var data = iface.encodeFunctionData('swapExactTokensForTokens', [amountIn, amountOut, address, to, Date.now() + 1000 * 60 * 5]);
           // var aaa = iface.decodeFunctionData('swapExactTokensForTokens', data)
           // console.dir(aaa);
@@ -368,7 +370,7 @@ function PancakeswapBot() {
       <div className="resultViewer">
         <ResultViewer data={resultViewer} />
       </div>
-      {/* <PaginationTableComponent data={tableViewer}/> */}
+      <p>{tableViewer}</p>
     </div>
   );
 }
