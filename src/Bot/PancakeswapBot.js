@@ -32,8 +32,7 @@ function PancakeswapBot() {
     mdx: false,
     cake: false,
     usdc: false,
-    resultViewer: ["================== Stop ==================="],
-    tableViewer: [" "]
+    resultViewer: ["================== Stop ==================="]
   });
 
   const resultTemp = [];
@@ -51,7 +50,7 @@ function PancakeswapBot() {
     setState({ ...state, resultViewer: "================== Stop ===================" });
   }
 
-  const { tableViewer, resultViewer, wbnb, usdt, bnb, busd, mdx, cake, usdc } = state;
+  const { resultViewer, wbnb, usdt, bnb, busd, mdx, cake, usdc } = state;
 
   // const TextFile = async (result) => {
   //   const fileData = JSON.stringify(result);
@@ -127,7 +126,7 @@ function PancakeswapBot() {
               console.log("first: " + first);
               console.log("second: " + second);
 
-              if(first === '')
+              if (first === '')
                 console.log("tokeIn: " + tokenIn);
 
               if (
@@ -144,13 +143,13 @@ function PancakeswapBot() {
 
                 let firstAddress = null;
 
-                if(first === "WBNB") firstAddress = config[config.network].addresses.WBNB;
-                if(first === "BNB") firstAddress = config[config.network].addresses.BNB;
-                if(first === "USDT") firstAddress = config[config.network].addresses.USDT;
-                if(first === "USDC") firstAddress = config[config.network].addresses.USDC;
-                if(first === "CAKE") firstAddress = config[config.network].addresses.CAKE;
-                if(first === "MDX") firstAddress = config[config.network].addresses.MDX;
-                if(first === "BUSD") firstAddress = config[config.network].addresses.BUSD;
+                if (first === "WBNB") firstAddress = config[config.network].addresses.WBNB;
+                if (first === "BNB") firstAddress = config[config.network].addresses.BNB;
+                if (first === "USDT") firstAddress = config[config.network].addresses.USDT;
+                if (first === "USDC") firstAddress = config[config.network].addresses.USDC;
+                if (first === "CAKE") firstAddress = config[config.network].addresses.CAKE;
+                if (first === "MDX") firstAddress = config[config.network].addresses.MDX;
+                if (first === "BUSD") firstAddress = config[config.network].addresses.BUSD;
 
                 const contractBalance = new ethers.Contract(firstAddress, genericErc20Abi, provider);
                 contractBalance.balanceOf(firstAddress)
@@ -167,28 +166,25 @@ function PancakeswapBot() {
                       // console.log(`gas_price: ${gas_price}`);
 
                       setState({ ...state, resultViewer: "================= Buy ====================" });
-                      setTimeout(async () => {
-                        await swapTokens(tokenIn, tokenOut, amountIn);
-                      }, 1);
-                      
+                      swapTokens(tokenIn, tokenOut, amountIn);
+
                       resultTemp.push("============== Buy ================");
                       resultTemp.push(new Date());
                       resultTemp.push(first);
                       resultTemp.push(second);
 
-                      setTimeout(async () => {
-                        const amounts = await pancake_route_contract.getAmountsOut(amountIn, [tokenIn, tokenOut]);
-                        // const amountOut = amounts[1].sub(amounts[1].div(10)); // 10%
-                        const amountOut = Math.floor(amounts[1] * 0.97) ; // 3%
+                      const amounts = pancake_route_contract.getAmountsOut(amountIn, [tokenIn, tokenOut]);
+                      // const amountOut = amounts[1].sub(amounts[1].div(10)); // 10%
+                      const amountOut = Math.floor(amounts[1] * 0.97); // 3%
 
-                        setState({ ...state, resultViewer: "================= Sell ====================" });
-                        await swapTokens(tokenOut, tokenIn, amountOut);
+                      setState({ ...state, resultViewer: "================= Sell ====================" });
+                      swapTokens(tokenOut, tokenIn, amountOut);
 
-                        resultTemp.push("============== Sell ================");
-                        resultTemp.push(new Date());
-                        resultTemp.push(second);
-                        resultTemp.push(first);
-                      }, 1);
+                      resultTemp.push("============== Sell ================");
+                      resultTemp.push(new Date());
+                      resultTemp.push(second);
+                      resultTemp.push(first);
+
                     } else {
                       console.log("Balance is not Enough.");
                     }
@@ -249,7 +245,7 @@ function PancakeswapBot() {
           const amounts = pancake_route_contract.getAmountsOut(amountIn, [tokenIn, tokenOut]);
           // const amountOut = amounts[1].sub(amounts[1].div(10)); // 10%
           const amountOut = Math.floor(amounts[1] * 0.97); // 3%
-          
+
           var data = iface.encodeFunctionData('swapExactTokensForTokens', [amountIn, amountOut, address, to, Date.now() + 1000 * 60 * 5]);
           // var aaa = iface.decodeFunctionData('swapExactTokensForTokens', data)
           // console.dir(aaa);
@@ -265,12 +261,10 @@ function PancakeswapBot() {
 
           try {
             //signedTx = await account.signTransaction(txObj);
-            setTimeout(() => {
-              account.sendTransaction(txObj).then((transaction) => {
-                console.dir(transaction);
-                console.log('====================== Swap Send finished! ================= ');
-              });
-            }, 3000);
+            account.sendTransaction(txObj).then((transaction) => {
+              console.dir(transaction);
+              console.log('====================== Swap Send finished! ================= ');
+            });
           } catch (error) {
             console.log("failed to send!!");
           }
@@ -370,7 +364,6 @@ function PancakeswapBot() {
       <div className="resultViewer">
         <ResultViewer data={resultViewer} />
       </div>
-      <p>{tableViewer}</p>
     </div>
   );
 }
