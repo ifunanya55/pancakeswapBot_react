@@ -1,0 +1,16 @@
+.table {
+  color: white !important;
+  font-size:  10px;
+}
+
+.table th {
+  font-size: 14px;
+}
+
+.pagination {
+  font-size: 10px;
+}
+
+.page-select {
+  font-size: 10px !important;
+}

@@ -5,6 +5,8 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';
 import ResultViewer from './ResultViewer';
+import './css/table.css';
+import Table from './Table';
 
 const ethers = require('ethers');
 const config = require('./config/test.json');
@@ -23,16 +25,17 @@ const pancake_route_abi = [
 const pancake_route_contract = new ethers.Contract(config[config.network].addresses.router, pancake_route_abi, provider);
 
 function PancakeswapBot() {
-
+  const date = new Date().toLocaleString();
   const [state, setState] = React.useState({
     wbnb: true,
-    usdt: false,
+    usdt: true,
     bnb: true,
     busd: true,
-    mdx: false,
-    cake: false,
-    usdc: false,
-    resultViewer: ["================== Stop ==================="]
+    mdx: true,
+    cake: true,
+    usdc: true,
+    resultViewer: ["Click the START button!"],
+    tableViewer: []
   });
 
   const resultTemp = [];
@@ -41,16 +44,16 @@ function PancakeswapBot() {
   };
 
   const start = () => {
-    setState({ ...state, resultViewer: "================== Start ===================" });
+    setState({ ...state, resultViewer: "================== Running ===================" });
     pendingTransaction();
   }
 
   const stop = () => {
     window.location.reload();
-    setState({ ...state, resultViewer: "================== Stop ===================" });
+    setState({ ...state, resultViewer: "Click the START button!" });
   }
 
-  const { resultViewer, wbnb, usdt, bnb, busd, mdx, cake, usdc } = state;
+  const { tableViewer, resultViewer, wbnb, usdt, bnb, busd, mdx, cake, usdc } = state;
 
   // const TextFile = async (result) => {
   //   const fileData = JSON.stringify(result);
@@ -72,13 +75,13 @@ function PancakeswapBot() {
       });
 
     provider.on("block", (blocknumber) => {
-      // console.log("blocknumber: " + blocknumber);
-      setState({ ...state, resultViewer: "blocknumber: " + blocknumber });
+      console.log("blocknumber: " + blocknumber);
+      // setState({ ...state, resultViewer: "Click the STOP button!"});
     })
 
     provider.on("pending", (tx) => {
-      // console.log("hash: " + tx.hash);
-      setState({ ...state, resultViewer: "token: " + tx.hash });
+      console.log("hash: " + tx.hash);
+      // setState({ ...state, resultViewer: "Running ..."});
 
       provider.getTransaction(tx.hash)
         .then(res => {
@@ -93,17 +96,16 @@ function PancakeswapBot() {
               // let tokenIn = decodeInputResult.inputs[2][0]; // WBNB
               // let tokenOut = decodeInputResult.inputs[2][1]; // to_purchase
 
-              // console.log("====tokenIn: " + tokenIn);
-              // console.log("==========tokenOut: " + tokenOut);
+              console.log("hash: " + tx.hash);
 
-              let analysisData = new ethers.utils.Interface(pancake_route_abi);
-              var data = analysisData.decodeFunctionData('swapExactTokensForTokens', res.data)
+              const analysisData = new ethers.utils.Interface(pancake_route_abi);
+              const data = analysisData.decodeFunctionData('swapExactTokensForTokens', res.data)
 
-              let amountIn = data.amountIn;
-              // let amountOutMin = data.amountOutMin;
+              var amountIn = data.amountIn;
+              var amountOut = data.amountOutMin;
 
-              let tokenIn = data.path[0].toLowerCase();
-              let tokenOut = data.path[1].toLowerCase();
+              var tokenIn = data.path[0].toLowerCase();
+              var tokenOut = data.path[1].toLowerCase();
 
               let first = '';
               let second = '';
@@ -152,43 +154,33 @@ function PancakeswapBot() {
                 if (first === "BUSD") firstAddress = config[config.network].addresses.BUSD;
 
                 const contractBalance = new ethers.Contract(firstAddress, genericErc20Abi, provider);
-                contractBalance.balanceOf(firstAddress)
-                  .then(balance => {
-
-                    console.log("amountIn ==== " + first + " ======== " + amountIn);
-                    console.log("balance ====== " + first + " ========== " + balance);
-
-                    if (balance >= amountIn) {
+                contractBalance.balanceOf(config[config.network].addresses.recipient)
+                .then(balance => {
+                  if(balance >= amountIn) {
+                    // const jmlBnb = ethers.utils.formatEther(amountIn);
+                    // console.log("jmlBnb ====== " + jmlBnb);
+                    // if ((jmlBnb < 11)) { // $20 ~ 28
+                    
                       console.log("=========== swap ================");
+  
+                      // setState({ ...state, resultViewer: "================= Buy ====================" });
+                      // swapTokens(tokenIn, tokenOut, amountIn, false);
 
-                      // provider.getGasPrice().then((currentGasPrice) => {
-                      //   let gas_price = ethers.utils.hexlify(parseInt(currentGasPrice));
-                      // console.log(`gas_price: ${gas_price}`);
-
-                      setState({ ...state, resultViewer: "================= Buy ====================" });
-                      swapTokens(tokenIn, tokenOut, amountIn);
-
-                      resultTemp.push("============== Buy ================");
-                      resultTemp.push(new Date());
-                      resultTemp.push(first);
-                      resultTemp.push(second);
-
-                      const amounts = pancake_route_contract.getAmountsOut(amountIn, [tokenIn, tokenOut]);
-                      // const amountOut = amounts[1].sub(amounts[1].div(10)); // 10%
-                      const amountOut = Math.floor(amounts[1] * 0.97); // 3%
-
-                      setState({ ...state, resultViewer: "================= Sell ====================" });
-                      swapTokens(tokenOut, tokenIn, amountOut);
-
-                      resultTemp.push("============== Sell ================");
-                      resultTemp.push(new Date());
-                      resultTemp.push(second);
-                      resultTemp.push(first);
-
-                    } else {
-                      console.log("Balance is not Enough.");
-                    }
-                  })
+                      // setState({ ...state, resultViewer: "================= Sell ====================" });
+                      setTimeout(() => {
+                        // swapTokens(tokenOut, tokenIn, amountOut, true);
+                      }, 3000);
+  
+                      resultTemp.push({"status": "Buy / Sell", "date": date, "in": first, "out": second});
+                      setState({ ...state, tableViewer: resultTemp});
+                      
+                    // } else {
+                      
+                    // }
+                  } else {
+                    console.log("Balance is not Enough.");
+                  }
+                });
               }
             } else {
               // console.log("This is not a swapExactTokensForTokens.");
@@ -198,7 +190,7 @@ function PancakeswapBot() {
     })
   }
 
-  const swapTokens = async (tokenIn, tokenOut, amountIn) => {
+  const swapTokens = async (tokenIn, tokenOut, amountIn, status) => {
 
     // Operating Smart contract
     // const pancake_route_address = "0x10ed43c718714eb63d5aa57b78b54704e256024e";
@@ -207,8 +199,8 @@ function PancakeswapBot() {
 
     // const pancake_route_contract = new ethers.Contract(pancake_route_address, pancake_route_abi, provider);
     // const signer = pancake_route_contract.connect(wallet);
-    // const amountIn = ethers.utils.parseUnits("0.01", 18);
-    // const amountOut = ethers.utils.parseUnits("3.40292", 18);
+    // amountIn = ethers.utils.parseUnits("0.01", 18);
+    // amountOut = ethers.utils.parseUnits("3.40292", 18);
     // const address = ["0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", "0xe9e7cea3dedca5984780bafc599bd69add087d56"];
     const address = [tokenIn, tokenOut];
     const to = config[config.network].addresses.recipient;
@@ -231,8 +223,8 @@ function PancakeswapBot() {
         to: tokenIn,
         value: 0,
         gasLimit: 144264, // 100000
-        gasPrice: 7000000000,
-        data: data,
+        gasPrice: 6000000000,
+        data: data
       }
 
       try {
@@ -242,32 +234,37 @@ function PancakeswapBot() {
           console.log('====================== Approve Send finished! ================= ');
 
           let iface = new ethers.utils.Interface(pancake_route_abi);
-          const amounts = pancake_route_contract.getAmountsOut(amountIn, [tokenIn, tokenOut]);
-          // const amountOut = amounts[1].sub(amounts[1].div(10)); // 10%
-          const amountOut = Math.floor(amounts[1] * 0.97); // 3%
 
-          var data = iface.encodeFunctionData('swapExactTokensForTokens', [amountIn, amountOut, address, to, Date.now() + 1000 * 60 * 5]);
-          // var aaa = iface.decodeFunctionData('swapExactTokensForTokens', data)
-          // console.dir(aaa);
-          const txObj =
-          {
-            from: config[config.network].addresses.recipient,
-            to: config[config.network].addresses.router,
-            value: 0,
-            gasLimit: 144264, // 100000
-            gasPrice: 7000000000,
-            data: data,
-          }
+          pancake_route_contract.getAmountsOut(amountIn, [tokenIn, tokenOut])
+          .then(amounts => {
+            var amountOut = amounts[1];  
+            if(status) {
+              amountOut = amounts[1] - amounts[1] / 99;
+            }
+            amountOut = ethers.utils.parseUnits(amountOut, 18);
+            var data = iface.encodeFunctionData('swapExactTokensForTokens', [amountIn, amountOut, address, to, Date.now() + 1000 * 60 * 5]);
+            // var aaa = iface.decodeFunctionData('swapExactTokensForTokens', data)
 
-          try {
-            //signedTx = await account.signTransaction(txObj);
-            account.sendTransaction(txObj).then((transaction) => {
-              console.dir(transaction);
-              console.log('====================== Swap Send finished! ================= ');
-            });
-          } catch (error) {
-            console.log("failed to send!!");
-          }
+            const txObj =
+            {
+              from: config[config.network].addresses.recipient,
+              to: config[config.network].addresses.router,
+              value: 0,
+              gasLimit: 144264, // 100000
+              gasPrice: 7000000000, // 7000000000
+              data: data
+            }
+
+            try {
+              //signedTx = await account.signTransaction(txObj);
+              account.sendTransaction(txObj).then((transaction) => {
+                // console.dir(transaction);
+                console.log('====================== Swap Send finished! ================= ');
+              });
+            } catch (error) {
+              console.log("failed to send!!");
+            }
+          });
         });
       } catch (error) {
         console.log("failed to send!!");
@@ -280,16 +277,16 @@ function PancakeswapBot() {
     }
   }
 
-  process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', error);
-  });
+  // process.on('uncaughtException', (error) => {
+  //   console.error('Uncaught Exception:', error);
+  // });
 
-  process.on('unhandledRejection', (reason, p) => {
-    console.error('Unhandled Rejection', {
-      unhandledRejection: p,
-      reason,
-    });
-  });
+  // process.on('unhandledRejection', (reason, p) => {
+  //   console.error('Unhandled Rejection', {
+  //     unhandledRejection: p,
+  //     reason,
+  //   });
+  // });
 
   return (
     <div className="containLayout">
@@ -297,48 +294,32 @@ function PancakeswapBot() {
 
       <FormGroup>
         <Grid container spacing={1}>
-          <Grid item xs={12} sm={4}>
+          <Grid item>
             <div>
               <FormControlLabel
                 control={<Checkbox checked={wbnb} onChange={handleChange} name="wbnb" />}
                 label="WBNB"
               />
-            </div>
-            <div>
               <FormControlLabel
                 control={<Checkbox checked={usdc} onChange={handleChange} name="usdc" />}
                 label="USDC"
               />
-            </div>
-            <div>
               <FormControlLabel
                 control={<Checkbox checked={usdt} onChange={handleChange} name="usdt" />}
                 label="USDT"
               />
-            </div>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <div>
               <FormControlLabel
                 control={<Checkbox checked={bnb} onChange={handleChange} name="bnb" />}
                 label="BNB"
               />
-            </div>
-            <div>
               <FormControlLabel
                 control={<Checkbox checked={mdx} onChange={handleChange} name="mdx" />}
                 label="MDX"
               />
-            </div>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <div>
               <FormControlLabel
                 control={<Checkbox checked={busd} onChange={handleChange} name="busd" />}
                 label="BUSD"
               />
-            </div>
-            <div>
               <FormControlLabel
                 control={<Checkbox checked={cake} onChange={handleChange} name="cake" />}
                 label="CAKE"
@@ -363,6 +344,9 @@ function PancakeswapBot() {
       </div>
       <div className="resultViewer">
         <ResultViewer data={resultViewer} />
+      </div>
+      <div className="resultViewer table-color">
+        <Table data={tableViewer} />
       </div>
     </div>
   );
