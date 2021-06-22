@@ -1,7 +1,7 @@
 {
   "network": "mainnet",
   "mainnet": {
-    "privateKey": "32ba963990ff302ca59870e9f8933ac76c77749a7838b41bd985c75385d7b885",
+    "privateKey": "",
     "node114": "https://bsc-dataseed.binance.org",
     "node7": "https://bsc-dataseed1.defibit.io/",
     "node20": "https://bsc-dataseed1.ninicoin.io/",
@@ -25,20 +25,20 @@
       "USDC": "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
       "factory": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73",
       "router": "0x10ED43C718714eb63d5aA57B78B54704E256024E",
-      "recipient": "0x4f162eFB3155525B2daff5108Fc1BC85EE8Ff326"
+      "recipient": ""
     },
     "slippage": "10",
     "gasLimit": "345684"
   },
   "testnet": {
-    "privateKey": "726d5e2fc884729ffac617cebf35684f9b865fab1d6b7764c6569380ce5707bd",
+    "privateKey": "",
     "node": "https://data-seed-prebsc-1-s1.binance.org:8545",
     "addresses": {
       "WBNB": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
       "BUSD": "0xe9e7cea3dedca5984780bafc599bd69add087d56",
       "factory": "0x6725F303b657a9451d8BA641348b6761A6CC7a17",
       "router": "0xD99D1c33F9fC3444f8101754aBC46c52416550D1",
-      "recipient": "0xa069cA8D757f8588524610833d3776FdAC03d862",
+      "recipient": "",
       "CAKE": "0x91984629f6c29c09d44cf984948556599c622149"
     }
   }
