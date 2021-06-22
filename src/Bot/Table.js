@@ -98,12 +98,12 @@ function Table({ columns, data }) {
           </a>
         </li>{' '} */}
         <select
-          className="form-control page-select"
+          className="form-control page-select page-link"
           value={pageSize}
           onChange={e => {
             setPageSize(Number(e.target.value))
           }}
-          style={{ width: '65px', height: '29px'}}
+          style={{ width: '70px', height: '35px'}}
         >
           {[5, 10, 20, 30, 40, 50].map(pageSize => (
             <option key={pageSize} value={pageSize}>

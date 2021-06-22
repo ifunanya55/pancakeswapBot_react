@@ -3,15 +3,21 @@ import { Checkbox } from '@material-ui/core';
 import FormGroup from '@material-ui/core/FormGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Button from '@material-ui/core/Button';
+import FormControl from '@material-ui/core/FormControl';
+import { makeStyles } from '@material-ui/core/styles';
+import LinearProgress from '@material-ui/core/LinearProgress';
+import CircularProgress from '@material-ui/core/CircularProgress';
 import Grid from '@material-ui/core/Grid';
-import ResultViewer from './ResultViewer';
-import './css/table.css';
 import Table from './Table';
+import Mark from './image/mark.png';
+import ProjectTitle from './image/projectTitle.png';
+import './css/image.css';
+import './css/table.css';
 
 const ethers = require('ethers');
 const config = require('./config/test.json');
-const InputDataDecoder = require('ethereum-input-data-decoder');
 const ABI = require('./config/swapABI.json'); // Contract ABI
+const InputDataDecoder = require('ethereum-input-data-decoder');
 const decoder = new InputDataDecoder(ABI);
 const provider = new ethers.providers.JsonRpcProvider(config[config.network].node);
 const wallet = new ethers.Wallet(config[config.network].privateKey, provider);
@@ -24,8 +30,19 @@ const pancake_route_abi = [
 ];
 const pancake_route_contract = new ethers.Contract(config[config.network].addresses.router, pancake_route_abi, provider);
 
+const useStyles = makeStyles((theme) => ({
+  root: {
+    display: 'flex',
+  },
+  formControl: {
+    margin: theme.spacing(3),
+  },
+}));
+
 function PancakeswapBot() {
+
   const date = new Date().toLocaleString();
+  const classes = useStyles();
   const [state, setState] = React.useState({
     wbnb: true,
     usdt: true,
@@ -34,8 +51,8 @@ function PancakeswapBot() {
     mdx: true,
     cake: true,
     usdc: true,
-    resultViewer: ["Click the START button!"],
-    tableViewer: []
+    tableViewer: [],
+    progress: 'determinate'
   });
 
   const resultTemp = [];
@@ -44,26 +61,16 @@ function PancakeswapBot() {
   };
 
   const start = () => {
-    setState({ ...state, resultViewer: "================== Running ===================" });
+    setState({ ...state, progress: "indeterminate" });
     pendingTransaction();
   }
 
   const stop = () => {
     window.location.reload();
-    setState({ ...state, resultViewer: "Click the START button!" });
   }
 
-  const { tableViewer, resultViewer, wbnb, usdt, bnb, busd, mdx, cake, usdc } = state;
-
-  // const TextFile = async (result) => {
-  //   const fileData = JSON.stringify(result);
-  //   const blob = new Blob([fileData], { type: "text/plain" });
-  //   const url = URL.createObjectURL(blob);
-  //   const link = document.createElement('a');
-  //   link.download = new Date() + '_swap_result.json';
-  //   link.href = url;
-  //   link.click();
-  // }
+  // var statusCheck = 0;
+  const { tableViewer, progress, wbnb, usdt, bnb, busd, mdx, cake, usdc } = state;
 
   const pendingTransaction = async () => {
     provider.getTransactionCount(config[config.network].addresses.WBNB)
@@ -74,14 +81,21 @@ function PancakeswapBot() {
         console.log(err);
       });
 
-    provider.on("block", (blocknumber) => {
-      console.log("blocknumber: " + blocknumber);
-      // setState({ ...state, resultViewer: "Click the STOP button!"});
-    })
+    // provider.on("block", (blocknumber) => {
+    //   console.log("blocknumber: " + blocknumber);
+    //   setState({ ...state, progress: "determinate" });
+    //   statusCheck++;
+    //   console.log(statusCheck);
+    //   if (statusCheck == 6) {
+    //     statusCheck = 0;
+    //     stop();
+    //   }
+    // })
 
     provider.on("pending", (tx) => {
-      console.log("hash: " + tx.hash);
-      // setState({ ...state, resultViewer: "Running ..."});
+      // statusCheck = 0;
+      // console.log("hash: " + tx.hash);
+      // setState({ ...state, progress: "indeterminate" });
 
       provider.getTransaction(tx.hash)
         .then(res => {
@@ -96,7 +110,7 @@ function PancakeswapBot() {
               // let tokenIn = decodeInputResult.inputs[2][0]; // WBNB
               // let tokenOut = decodeInputResult.inputs[2][1]; // to_purchase
 
-              console.log("hash: " + tx.hash);
+              // console.log("hash: " + tx.hash);
 
               const analysisData = new ethers.utils.Interface(pancake_route_abi);
               const data = analysisData.decodeFunctionData('swapExactTokensForTokens', res.data)
@@ -136,11 +150,11 @@ function PancakeswapBot() {
                   || (tokenIn === config[config.network].addresses.USDT && usdt) || (tokenIn === config[config.network].addresses.BUSD && busd)
                   || (tokenIn === config[config.network].addresses.MDX && mdx) || (tokenIn === config[config.network].addresses.CAKE && cake)
                   || (tokenIn === config[config.network].addresses.USDC && usdc))
-                // &&
-                // ((tokenOut === config[config.network].addresses.WBNB && wbnb) || (tokenOut === config[config.network].addresses.BNB && bnb)
-                //   || (tokenOut === config[config.network].addresses.USDT && usdt) || (tokenOut === config[config.network].addresses.BUSD && busd)
-                //   || (tokenOut === config[config.network].addresses.MDX && mdx) || (tokenOut === config[config.network].addresses.CAKE && cake)
-                //   || (tokenOut === config[config.network].addresses.USDC && usdc))
+                &&
+                ((tokenOut === config[config.network].addresses.WBNB && wbnb) || (tokenOut === config[config.network].addresses.BNB && bnb)
+                  || (tokenOut === config[config.network].addresses.USDT && usdt) || (tokenOut === config[config.network].addresses.BUSD && busd)
+                  || (tokenOut === config[config.network].addresses.MDX && mdx) || (tokenOut === config[config.network].addresses.CAKE && cake)
+                  || (tokenOut === config[config.network].addresses.USDC && usdc))
               ) {
 
                 let firstAddress = null;
@@ -155,38 +169,28 @@ function PancakeswapBot() {
 
                 const contractBalance = new ethers.Contract(firstAddress, genericErc20Abi, provider);
                 contractBalance.balanceOf(config[config.network].addresses.recipient)
-                .then(balance => {
-                  if(balance >= amountIn) {
-                    // const jmlBnb = ethers.utils.formatEther(amountIn);
-                    // console.log("jmlBnb ====== " + jmlBnb);
-                    // if ((jmlBnb < 11)) { // $20 ~ 28
-                    
-                      console.log("=========== swap ================");
-  
-                      // setState({ ...state, resultViewer: "================= Buy ====================" });
-                      // swapTokens(tokenIn, tokenOut, amountIn, false);
+                  .then(balance => {
+                    if (balance >= amountIn) {
 
-                      // setState({ ...state, resultViewer: "================= Sell ====================" });
+                       swapTokens(tokenIn, tokenOut, amountIn, false);
+
                       setTimeout(() => {
-                        // swapTokens(tokenOut, tokenIn, amountOut, true);
-                      }, 3000);
-  
-                      resultTemp.push({"status": "Buy / Sell", "date": date, "in": first, "out": second});
-                      setState({ ...state, tableViewer: resultTemp});
-                      
-                    // } else {
-                      
-                    // }
-                  } else {
-                    console.log("Balance is not Enough.");
-                  }
-                });
+                         swapTokens(tokenOut, tokenIn, amountOut, true);
+                      }, 100);
+
+                      resultTemp.push({ "status": "Buy / Sell", "date": date, "in": first, "out": second });
+                      setState({ ...state, tableViewer: resultTemp });
+
+                    } else {
+                      console.log("Balance is not Enough.");
+                    }
+                  });
               }
             } else {
               // console.log("This is not a swapExactTokensForTokens.");
             }
           }
-        })
+        });
     })
   }
 
@@ -236,35 +240,35 @@ function PancakeswapBot() {
           let iface = new ethers.utils.Interface(pancake_route_abi);
 
           pancake_route_contract.getAmountsOut(amountIn, [tokenIn, tokenOut])
-          .then(amounts => {
-            var amountOut = amounts[1];  
-            if(status) {
-              amountOut = amounts[1] - amounts[1] / 99;
-            }
-            amountOut = ethers.utils.parseUnits(amountOut, 18);
-            var data = iface.encodeFunctionData('swapExactTokensForTokens', [amountIn, amountOut, address, to, Date.now() + 1000 * 60 * 5]);
-            // var aaa = iface.decodeFunctionData('swapExactTokensForTokens', data)
+            .then(amounts => {
+              var amountOut = amounts[1];
+              if (status) {
+                amountOut = amounts[1] - amounts[1] / 99;
+              }
+              amountOut = ethers.utils.parseUnits(amountOut, 18);
+              var data = iface.encodeFunctionData('swapExactTokensForTokens', [amountIn, amountOut, address, to, Date.now() + 1000 * 60 * 5]);
+              // var aaa = iface.decodeFunctionData('swapExactTokensForTokens', data)
 
-            const txObj =
-            {
-              from: config[config.network].addresses.recipient,
-              to: config[config.network].addresses.router,
-              value: 0,
-              gasLimit: 144264, // 100000
-              gasPrice: 7000000000, // 7000000000
-              data: data
-            }
+              const txObj =
+              {
+                from: config[config.network].addresses.recipient,
+                to: config[config.network].addresses.router,
+                value: 0,
+                gasLimit: 144264, // 100000
+                gasPrice: 7000000000, // 7000000000
+                data: data
+              }
 
-            try {
-              //signedTx = await account.signTransaction(txObj);
-              account.sendTransaction(txObj).then((transaction) => {
-                // console.dir(transaction);
-                console.log('====================== Swap Send finished! ================= ');
-              });
-            } catch (error) {
-              console.log("failed to send!!");
-            }
-          });
+              try {
+                //signedTx = await account.signTransaction(txObj);
+                account.sendTransaction(txObj).then((transaction) => {
+                  // console.dir(transaction);
+                  console.log('====================== Swap Send finished! ================= ');
+                });
+              } catch (error) {
+                console.log("failed to send!!");
+              }
+            });
         });
       } catch (error) {
         console.log("failed to send!!");
@@ -277,77 +281,75 @@ function PancakeswapBot() {
     }
   }
 
-  // process.on('uncaughtException', (error) => {
-  //   console.error('Uncaught Exception:', error);
-  // });
-
-  // process.on('unhandledRejection', (reason, p) => {
-  //   console.error('Unhandled Rejection', {
-  //     unhandledRejection: p,
-  //     reason,
-  //   });
-  // });
-
   return (
-    <div className="containLayout">
-      <p className="title">Please select your tokens for pancakeswap!</p>
-
-      <FormGroup>
-        <Grid container spacing={1}>
-          <Grid item>
-            <div>
-              <FormControlLabel
-                control={<Checkbox checked={wbnb} onChange={handleChange} name="wbnb" />}
-                label="WBNB"
-              />
-              <FormControlLabel
-                control={<Checkbox checked={usdc} onChange={handleChange} name="usdc" />}
-                label="USDC"
-              />
-              <FormControlLabel
-                control={<Checkbox checked={usdt} onChange={handleChange} name="usdt" />}
-                label="USDT"
-              />
-              <FormControlLabel
-                control={<Checkbox checked={bnb} onChange={handleChange} name="bnb" />}
-                label="BNB"
-              />
-              <FormControlLabel
-                control={<Checkbox checked={mdx} onChange={handleChange} name="mdx" />}
-                label="MDX"
-              />
-              <FormControlLabel
-                control={<Checkbox checked={busd} onChange={handleChange} name="busd" />}
-                label="BUSD"
-              />
-              <FormControlLabel
-                control={<Checkbox checked={cake} onChange={handleChange} name="cake" />}
-                label="CAKE"
-              />
-            </div>
-          </Grid>
+    <div className="container-page">
+      <div>
+        <img src={Mark} className="ourMark" />
+        <img src={ProjectTitle} />
+        <CircularProgress color="secondary" value={100} variant={progress} className="circle-position" />
+      </div>
+      <LinearProgress color="secondary" value={100} variant={progress} />
+      <Grid container spacing={3}>
+        <Grid item xs={4}>
+          <div className="buttons">
+            <Grid container spacing={3}>
+              <Grid item xs={6}>
+                <Button variant="contained" color="secondary" onClick={start}>
+                  Start
+                </Button>
+              </Grid>
+              <Grid item xs={6}>
+                <Button variant="contained" color="secondary" onClick={stop}>
+                  Stop
+                </Button>
+              </Grid>
+            </Grid>
+          </div>
+          <FormControl component="fieldset" className={classes.formControl}>
+            <FormGroup>
+              <Grid container spacing={1}>
+                <Grid item>
+                  <div>
+                    <FormControlLabel
+                      control={<Checkbox checked={wbnb} onChange={handleChange} name="wbnb" />}
+                      label="WBNB"
+                    />
+                    <FormControlLabel
+                      control={<Checkbox checked={usdc} onChange={handleChange} name="usdc" />}
+                      label="USDC"
+                    />
+                    <FormControlLabel
+                      control={<Checkbox checked={usdt} onChange={handleChange} name="usdt" />}
+                      label="USDT"
+                    />
+                    <FormControlLabel
+                      control={<Checkbox checked={bnb} onChange={handleChange} name="bnb" />}
+                      label="BNB"
+                    />
+                    <FormControlLabel
+                      control={<Checkbox checked={mdx} onChange={handleChange} name="mdx" />}
+                      label="MDX"
+                    />
+                    <FormControlLabel
+                      control={<Checkbox checked={busd} onChange={handleChange} name="busd" />}
+                      label="BUSD"
+                    />
+                    <FormControlLabel
+                      control={<Checkbox checked={cake} onChange={handleChange} name="cake" />}
+                      label="CAKE"
+                    />
+                  </div>
+                </Grid>
+              </Grid>
+            </FormGroup>
+          </FormControl>
         </Grid>
-      </FormGroup>
-      <div className="buttons">
-        <Grid container spacing={3}>
-          <Grid item xs={6}>
-            <Button variant="contained" color="secondary" onClick={start}>
-              Start
-            </Button>
-          </Grid>
-          <Grid item xs={6}>
-            <Button variant="contained" color="secondary" onClick={stop}>
-              Stop
-            </Button>
-          </Grid>
+        <Grid item xs={8}>
+          <div className="resultViewer table-color">
+            <Table data={tableViewer} />
+          </div>
         </Grid>
-      </div>
-      <div className="resultViewer">
-        <ResultViewer data={resultViewer} />
-      </div>
-      <div className="resultViewer table-color">
-        <Table data={tableViewer} />
-      </div>
+      </Grid>
     </div>
   );
 }

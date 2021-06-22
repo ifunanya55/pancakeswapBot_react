@@ -29,20 +29,28 @@
 }
 
 .title {
-  font-size: 40px;
+  font-size: 12px;
 }
 
 .buttons {
-  margin-top: 40px;
+  margin-top: 0 20px;
 }
 
 .containLayout {
   margin-top: -10vh; 
 }
 
-.resultViewer {
-  margin-top: 40px;
-  min-height: 30px;
+.circle-position {
+  float: right;
+  margin-top: 60px;
+}
+
+.container-page {
+  width: 90%;
+}
+
+.MuiGrid-root .MuiGrid-item .MuiGrid-grid-xs-6 {
+  margin-top: 10px !important;
 }
 
 @keyframes App-logo-spin {
